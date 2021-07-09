@@ -6,6 +6,6 @@ using Random
 using Plots, StatsPlots, Measures
 
 include("sample.jl")
-
+include("plotting.jl")
 
 end
