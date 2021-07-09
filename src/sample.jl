@@ -8,8 +8,8 @@ function randclasses(classconfig, n, σ=10, q=2, seed=1618)
     configs = Vector{Float64}[]
 
     for i = 1:nc
-        delta = rand(Gamma(q*classes[i].p, 1/q), classes[i].m)
-        config = classes[i].start .+ cumsum(delta)
+        delta = rand(Gamma(q*classconfig[i].p, 1/q), classconfig[i].m)
+        config = classconfig[i].start .+ cumsum(delta)
         push!(configs, config)
     end
     
@@ -26,7 +26,7 @@ function randclasses(classconfig, n, σ=10, q=2, seed=1618)
     
 
     
-    (configs=configs, n=n, obs=obs, classes=classes, x=x)
+    (configs=configs, n=n, obs=obs, classconfig=classconfig, x=x)
 
 end
 
