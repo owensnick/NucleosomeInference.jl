@@ -1,8 +1,11 @@
 module NucleosomeInference
 
 # Write your package code here.
-using Turing, StatsFuns
+using Turing
+using Random
 using Plots, StatsPlots, Measures
+
+include("sample.jl")
 
 
 end
