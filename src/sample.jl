@@ -35,3 +35,27 @@ function simpletwoclass(n=1000, σ=10)
     randclasses(classconfig, n, σ)
 end
 
+
+
+###
+
+
+
+# OK, here we go. Physical model for nimble, simplest version.
+# 4 parameters: Position left side barrier, position right side barrier, a, b (you'll see), we can fix a subset for now
+# Drawing data:
+
+
+	
+# Be able to draw from exponential with mean 1/b and add a
+# 	From right side of barrier, add these random numbers until you reach the end of the domain
+# 	From the left side of barrier, subtract these random numbers until you reach the end of the domain
+# 	You now got positions of nucleosomes in a virtual cell
+# 	Take difference of nearest neighbours to generate one virtual read.
+        
+
+function physicsmodel(posleft, posright, a, b)
+
+
+
+end
