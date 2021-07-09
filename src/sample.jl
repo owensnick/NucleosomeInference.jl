@@ -54,8 +54,26 @@ end
 # 	Take difference of nearest neighbours to generate one virtual read.
         
 
-function physicsmodel(posleft, posright, a, b)
+function rand_cellconfiguration(posleft=-50, posright=50, a=147, b=1/33, xrange=[-1000, 1000])
+
+    rightpositions = Float64[]
+    leftpositions  = Float64[]
+
+    cp = posright
+    while cp <= last(xrange)
+        cp = cp + rand(Exponential(1/b)) + a
+        push!(rightpositions, cp)
+    end
+
+    cp = posleft
+    while cp >= first(xrange)
+        cp = cp - rand(Exponential(1/b)) + a
+        push!(leftpositions, cp)
+    end
 
 
+    [leftpositions ; rightpositions]
 
 end
+
+using Distributions
