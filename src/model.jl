@@ -8,7 +8,7 @@ function logpfun_mv(x, μ, σ, w)
 end
 
 
-@model function (x, nc, nsites, σ,  p,  wc=ones(nc)/nc, wp=ones(nsites-1)/(nsites-1), w=wc.*wp', q = 2)
+@model function nuc_pair_model(x, nc, nsites, σ,  p,  wc=ones(nc)/nc, wp=ones(nsites-1)/(nsites-1), w=wc.*wp', q = 2)
     
     n = size(x, 2)
     startpos ~ filldist(Uniform(-1500, 1500), nc)
