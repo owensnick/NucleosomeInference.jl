@@ -1,3 +1,45 @@
+
+
+### function to load fasta files in the folder data
+### records description is formatted: hg19_dna range=chr10:71108610-71108717 5'pad=0 3'pad=0 strand=+ repeatMasking=non
+
+function loadseq(file="hk1_reg_region.fa", projdir=getprojectdir())
+    filepath = joinpath(projdir, "data", file)
+    reader = open(FASTA.Reader, filepath) 
+    record = first(collect(reader))
+    close(reader)
+    seq = LongDNA{4}(sequence(record))
+
+    desc = split(replace(description(record), "range=" => ""))[2]
+    chromloc = split(desc, r"[:-]")
+    (seq=seq, chrom=first(chromloc), loc=parse(Int, chromloc[2]):parse(Int, chromloc[3]))
+
+end
+
+
+function sample_hk1(;nreads=10, open_meth_prob=0.9, closed_meth_prob=0.05, fwprob=0.5)
+    seq = loadseq()
+    ### look for footprint sequences within seq
+    ### TATTCCA for nfat
+    ### GTACTCGA for NKX2-2
+    ### TGTTTGT for foxa2
+    footprint_nfat  = findall(ExactSearchQuery(dna"TATTCCA"), seq.seq)
+    footprint_nkx2  = findall(ExactSearchQuery(dna"GTACTCGA"), seq.seq)
+    footprint_foxa2 = findall(ExactSearchQuery(dna"TGTTTGT"), seq.seq)
+    
+    ### check that only one footprint sequence is found for each of nfat, nkx2, foxa2
+    @assert length(footprint_nfat) == 1
+    @assert length(footprint_nkx2) == 1
+    @assert length(footprint_foxa2) == 1
+    
+    footprints = reduce(vcat, [footprint_nfat, footprint_nkx2, footprint_foxa2])
+    footprint_labels = ["NFAT", "NKX2-2", "FOXA2"]
+ 
+    sample = sample_smf_data(footprints, seq.seq, nreads, open_meth_prob, closed_meth_prob, fwprob)
+
+    (sample..., seq=seq, footprints=footprints, labels=footprint_labels, open_meth_prob=open_meth_prob, closed_meth_prob=closed_meth_prob, fwprob=fwprob)    
+end
+
 """
     sample_smf_data(tf_footprints, seq, nreads=10, open_meth_prob=0.9, closed_meth_prob=0.05, fwprob=0.5)
 
@@ -6,35 +48,26 @@
 """
 function sample_smf_data(tf_footprints, seq, nreads=10, open_meth_prob=0.9, closed_meth_prob=0.05, fwprob=0.5)
 
+  
+
     pos_A = seq .== DNA_A
     pos_T = seq .== DNA_T
-
-    open_A = seq .== DNA_A
-    open_T = seq .== DNA_T
-
-    for (s, e) in tf_footprints
-        open_A[s:e] .= false
-        open_T[s:e] .= false
-    end
-    
-
+   
     fA = findall(pos_A)
     fT = findall(pos_T)
 
-    sampled_reads = Vector{Int}[]
+    a_in_fp = [!any(fp -> f ∈ fp, tf_footprints) for f in fA]
+    t_in_fp = [!any(fp -> f ∈ fp, tf_footprints) for f in fT]
 
-    for i = 1:nreads
-        fr = rand(Bernoulli(fwprob))
+    
+    fn = rand(Binomial(nreads, fwprob))
+    rn = nreads - fn
 
-        if fr
-            r = sample_pos(fA, open_A, open_meth_prob, closed_meth_prob)
-        else
-            r = sample_pos(fT, open_T, open_meth_prob, closed_meth_prob)
-        end
-        push!(sampled_reads, r)
-    end
+    forward_reads = mapreduce(_ -> rand.(Bernoulli.(ifelse.(a_in_fp, open_meth_prob, closed_meth_prob))), hcat, 1:fn)
+    reverse_reads = mapreduce(_ -> rand.(Bernoulli.(ifelse.(t_in_fp, open_meth_prob, closed_meth_prob))), hcat, 1:rn)
 
-    sampled_reads
+    
+    (fA=fA, fT=fT, a_in_fp=a_in_fp, t_in_fp, forward_reads=forward_reads, reverse_reads=reverse_reads)
 end
 
 """
