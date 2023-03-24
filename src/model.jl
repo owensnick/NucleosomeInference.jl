@@ -20,3 +20,49 @@ end
     #x ~ filldist(MixtureModel(Normal.(vec(μ), w)), n)
     Turing.@addlogprob! logpfun_mv(x, vec(μ), σ, w)
 end
+
+
+
+@model function smf_bp_single(reads)
+
+    open_p   ~ Beta(1, 1)
+    closed_p ~ Beta(1, 1)
+    
+    footprint_p ~ filldist(Beta(1, 1), size(reads, 1))
+    footprint ~ Bernoulli.(footprint_p)
+
+    for i = 1:size(reads, 1)
+        reads[i, :] ~ filldist(Bernoulli(footprint[i] ? open_p : closed_p), size(reads, 2))
+    end
+end
+
+
+@model function smf_bp_single_nv(reads)
+
+    open_p   ~ Beta(1, 1)
+    closed_p ~ Beta(1, 1)
+    
+    footprint_p ~ filldist(Beta(1, 1), size(reads, 1))
+
+    footprint = Vector{Bool}(undef, size(reads, 1))
+    for i = 1:size(reads, 1)
+        footprint[i] ~ Bernoulli(footprint_p[i])
+    end
+    
+    for j = 1:size(reads, 2), i = 1:size(reads, 1)
+        reads[i, j] ~ Bernoulli(footprint[i] ? open_p : closed_p)
+    end
+
+end
+
+function smf_bp_total(total_meth, n)
+    open_p   ~ Beta(1, 1)
+    closed_p ~ Beta(1, 1)
+    m = length(total_meth)
+
+    footprint_p ~ filldist(Beta(1, 1), m)
+    footprint ~ Bernoulli.(footprint_p)
+
+    total_meth ~ filldist(Binomial(n, footprint ? open_p : closed_p), m)
+    
+end
