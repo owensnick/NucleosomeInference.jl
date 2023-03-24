@@ -50,19 +50,46 @@ end
     end
     
     for j = 1:size(reads, 2), i = 1:size(reads, 1)
-        reads[i, j] ~ Bernoulli(footprint[i] ? open_p : closed_p)
+        reads[i, j] ~ Bernoulli(footprint[i] ? closed_p : open_p)
     end
 
 end
 
-function smf_bp_total(total_meth, n)
+@model function smf_bp_total(total_meth, n)
     open_p   ~ Beta(1, 1)
     closed_p ~ Beta(1, 1)
+
+
     m = length(total_meth)
 
     footprint_p ~ filldist(Beta(1, 1), m)
     footprint ~ Bernoulli.(footprint_p)
 
-    total_meth ~ filldist(Binomial(n, footprint ? open_p : closed_p), m)
+    total_meth ~ Binomial.(n, ifelse.(footprint, closed_p, open_p))
     
+end
+
+@model function smf_twoclass_total(total_meth, n)
+    
+    K = 2
+    w ~ Dirichlet(K, 1.0)
+    site_assignments = Categorical(w)
+
+    class_1   ~ Beta(1, 1)
+    class_2 ~ Beta(1, 1)
+    
+
+    m = length(total_meth)
+
+    k = Vector{Int}(undef, m)
+    for i = 1:m
+        k[i] ~ site_assignments
+
+        if k[i] == 1
+            total_meth[i] ~ Binomial(n, class_1)
+        else
+            total_meth[i] ~ Binomial(n, class_2)
+        end
+    end
+    return k
 end
